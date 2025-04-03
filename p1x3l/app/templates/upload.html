@@ -1,0 +1,217 @@
+{% extends 'blueprints/base.html' %}
+{% block content %}
+<div class="max-w-2xl mx-auto p-6">
+    <h1 class="text-3xl font-bold text-gray-900 mb-8">Upload File</h1>
+    
+    <div class="bg-white rounded-lg shadow-lg p-6">
+        <form id="uploadForm" class="space-y-6">
+            {% csrf_token %}
+            
+            <!-- Drag and Drop Zone -->
+            <div id="dropZone" class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-blue-500 transition-colors">
+                <div class="space-y-2">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                        <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    <div class="text-gray-600">
+                        <label for="fileInput" class="cursor-pointer">
+                            <span class="font-medium text-blue-600 hover:text-blue-500">Click to upload</span>
+                            or drag and drop
+                        </label>
+                        <input id="fileInput" type="file" class="hidden" />
+                    </div>
+                    <p class="text-sm text-gray-500">Any file type</p>
+                </div>
+            </div>
+
+            <!-- File Preview -->
+            <div id="filePreview" class="hidden">
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div class="flex items-center space-x-3">
+                        <svg class="h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <div>
+                            <p id="fileName" class="text-sm font-medium text-gray-900"></p>
+                            <p id="fileSize" class="text-sm text-gray-500"></p>
+                        </div>
+                    </div>
+                    <button type="button" id="removeFile" class="text-gray-400 hover:text-gray-500">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Public/Private Toggle -->
+            <div class="flex items-center">
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="isPublic" class="sr-only peer">
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    <span class="ml-3 text-sm font-medium text-gray-900">Make file public</span>
+                </label>
+            </div>
+
+            <!-- Upload Button -->
+            <button type="submit" id="uploadButton" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                Upload
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const filePreview = document.getElementById('filePreview');
+    const fileName = document.getElementById('fileName');
+    const fileSize = document.getElementById('fileSize');
+    const removeFile = document.getElementById('removeFile');
+    const uploadForm = document.getElementById('uploadForm');
+    const uploadButton = document.getElementById('uploadButton');
+    let selectedFile = null;
+
+    // Handle file selection
+    fileInput.addEventListener('change', handleFileSelect);
+
+    // Handle drag and drop
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('border-blue-500');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('border-blue-500');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('border-blue-500');
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            fileInput.files = files;
+            handleFileSelect();
+        }
+    });
+
+    // Handle file preview
+    function handleFileSelect() {
+        const file = fileInput.files[0];
+        if (file) {
+            selectedFile = file;
+            fileName.textContent = file.name;
+            fileSize.textContent = formatFileSize(file.size);
+            filePreview.classList.remove('hidden');
+            uploadButton.disabled = false;
+        }
+    }
+
+    // Remove file
+    removeFile.addEventListener('click', () => {
+        fileInput.value = '';
+        selectedFile = null;
+        filePreview.classList.add('hidden');
+        uploadButton.disabled = true;
+    });
+
+    // Format file size
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // Handle form submission
+    uploadForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (!selectedFile) return;
+
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+        formData.append('is_public', document.getElementById('isPublic').checked);
+        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+        try {
+            uploadButton.disabled = true;
+            uploadButton.textContent = 'Uploading...';
+            
+            const response = await fetch('{% url "upload_file" %}', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+            
+            if (response.ok) {
+                // Show success message
+                const message = document.createElement('div');
+                message.className = 'fixed top-20 right-4 z-50 transform transition-all duration-300 ease-in-out animate-slide-in-right max-w-sm rounded-lg shadow-lg overflow-hidden bg-green-500 message-toast';
+                message.innerHTML = `
+                    <div class="p-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm font-medium text-white">File uploaded successfully!</p>
+                                </div>
+                            </div>
+                            <button class="ml-4 flex-shrink-0 text-white hover:text-gray-400 hover:cursor-pointer focus:outline-none" onclick="this.closest('.message-toast').remove()">
+                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(message);
+                
+                // Reset form
+                fileInput.value = '';
+                selectedFile = null;
+                filePreview.classList.add('hidden');
+                document.getElementById('isPublic').checked = false;
+            } else {
+                throw new Error(data.error || 'Upload failed');
+            }
+        } catch (error) {
+            // Show error message
+            const message = document.createElement('div');
+            message.className = 'fixed top-20 right-4 z-50 transform transition-all duration-300 ease-in-out animate-slide-in-right max-w-sm rounded-lg shadow-lg overflow-hidden bg-red-500 message-toast';
+            message.innerHTML = `
+                <div class="p-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm font-medium text-white">${error.message}</p>
+                            </div>
+                        </div>
+                        <button class="ml-4 flex-shrink-0 text-white hover:text-gray-400 hover:cursor-pointer focus:outline-none" onclick="this.closest('.message-toast').remove()">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(message);
+        } finally {
+            uploadButton.disabled = false;
+            uploadButton.textContent = 'Upload';
+        }
+    });
+});
+</script>
+{% endblock %}

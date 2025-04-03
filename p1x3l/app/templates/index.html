@@ -1,0 +1,70 @@
+{% extends 'blueprints/base.html' %}
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold text-center mb-8 text-gray-800">p1x3l gallery</h1>
+
+    {% if public_images %}
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        {% for image in public_images %}
+            {% if image.is_image %}
+            <div class="bg-white rounded-lg shadow-lg overflow-hidden transform transition duration-300 hover:scale-105">
+                <div class="relative aspect-square">
+                    <img src="{{ image.public_link }}" 
+                         class="w-full h-full object-cover">
+                </div>
+                <div class="p-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm text-gray-600">
+                            <a href="{% url 'user_profile' image.user.id %}" class="hover:underline"><span class="font-semibold">{{ image.user.username }}</span></a>
+                        </span>
+                        <span class="text-sm text-gray-500">
+                            <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                            </svg>
+                            {{ image.views }}
+                        </span>
+                    </div>
+                    <div class="text-xs text-gray-500 mb-3">
+                        {{ image.created_at|date:"Y.m.d H:i" }}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-12">
+        <p class="text-gray-600 text-lg">No public images available.</p>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    function openModal(imageSrc) {
+        const modal = document.getElementById('imageModal');
+        const modalImg = document.getElementById('modalImage');
+        modalImg.src = imageSrc;
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+    }
+
+    function closeModal() {
+        const modal = document.getElementById('imageModal');
+        modal.classList.remove('flex');
+        modal.classList.add('hidden');
+    }
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeModal();
+        }
+    });
+</script>
+{% endblock %}

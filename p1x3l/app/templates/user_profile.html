@@ -1,0 +1,54 @@
+{% extends 'blueprints/base.html' %}
+
+{% block content %}
+<div class="container mx-auto py-10">
+    <div class="max-w-2xl mx-auto bg-white p-6 rounded-lg shadow-md">
+        <h1 class="text-3xl font-bold text-center mb-4">{{ user_data.user.username }}'s Profile</h1>
+        <p class="text-lg text-center text-gray-700">Public Files: {{ user_data.file_count }}</p>
+    </div>
+
+    <div class="max-w-2xl mx-auto mt-6">
+        <h2 class="text-2xl font-semibold mb-4">Public Files</h2>
+        {% if user_data.stored_files %}
+        {% for file in user_data.stored_files %}
+        <div class="bg-white p-4 rounded-lg shadow-md mb-4">
+            {% if file.is_image %}
+            <img src="{{ file.public_link }}" alt="{{ file.file.name }}" class="mt-2 rounded">
+            {% endif %}
+            <p class="text-gray-500 text-sm">Uploaded on: {{ file.created_at|date:"Y.m.d H:i" }}</p>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="text-gray-600">No public files available.</p>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    function openModal(imageSrc) {
+        const modal = document.getElementById('imageModal');
+        const modalImg = document.getElementById('modalImage');
+        modalImg.src = imageSrc;
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+
+        modal.addEventListener('click', function (e) {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+    }
+
+    function closeModal() {
+        const modal = document.getElementById('imageModal');
+        modal.classList.remove('flex');
+        modal.classList.add('hidden');
+    }
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            closeModal();
+        }
+    });
+</script>
+{% endblock %}

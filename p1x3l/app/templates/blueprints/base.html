@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <title>p1x3l</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body>
+<!--Navbar-->
+<nav class="bg-gray-800 fixed w-full z-50">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="flex h-16 items-center justify-between">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <a class="text-white text-xl font-bold" href="{% url 'index' %}">p1x3l</a>
+                </div>
+            </div>
+            <div class="flex items-center">
+                {% if user.is_authenticated %}
+                    <span class="text-white mr-4">Welcome, {{ user.username }}!</span>
+                    <a href="{% url 'upload_file' %}"
+                       class="rounded-md bg-blue-600 px-4 py-2 mr-4 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                        Upload
+                    </a>
+                    <a href="{% url 'my_profile' %}"
+                       class="rounded-md bg-blue-600 px-4 py-2 mr-4 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                        Profile
+                    </a>
+                    <a href="{% url 'logout' %}"
+                       class="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                        Logout
+                    </a>
+                {% else %}
+                <a href="{% url 'login' %}"
+                   class="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                    Login
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</nav>
+
+<!-- Main content -->
+<div class="pt-16">
+    {% if messages %}
+    <!-- Messages popup -->
+    <div class="fixed top-20 right-4 z-50 space-y-4" id="messages-container">
+        {% for message in messages %}
+        <div class="transform transition-all duration-300 ease-in-out animate-slide-in-right max-w-sm rounded-lg shadow-lg overflow-hidden {% if message.tags == 'success' %}bg-green-500{% elif message.tags == 'error' %}bg-red-500{% elif message.tags == 'warning' %}bg-yellow-500{% else %}bg-blue-500{% endif %} message-toast">
+            <div class="p-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            {% if message.tags == 'success' %}
+                            <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            {% elif message.tags == 'error' %}
+                            <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                            {% elif message.tags == 'warning' %}
+                            <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                            </svg>
+                            {% else %}
+                            <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            {% endif %}
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium text-white">{{ message }}</p>
+                        </div>
+                    </div>
+                    <button class="ml-4 flex-shrink-0 text-white hover:text-gray-400 hover:cursor-pointer focus:outline-none" onclick="closeMessage(this)">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% block content %}{% endblock %}
+</div>
+
+<style>
+    @keyframes slide-in-right {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    @keyframes fade-out {
+        from {
+            opacity: 1;
+        }
+        to {
+            opacity: 0;
+        }
+    }
+    .animate-slide-in-right {
+        animation: slide-in-right 0.5s ease-out forwards;
+    }
+    .animate-fade-out {
+        animation: fade-out 0.5s ease-out forwards;
+    }
+</style>
+
+<script>
+    function closeMessage(button) {
+        const message = button.closest('.message-toast');
+        message.classList.add('animate-fade-out');
+        setTimeout(() => {
+            message.remove();
+        }, 500);
+    }
+
+    // Auto-close messages after 5 sec
+    document.addEventListener('DOMContentLoaded', function() {
+        const messages = document.querySelectorAll('.message-toast');
+        messages.forEach(message => {
+            setTimeout(() => {
+                message.classList.add('animate-fade-out');
+                setTimeout(() => {
+                    message.remove();
+                }, 500);
+            }, 5000);
+        });
+    });
+</script>
+</body>
+</html>
