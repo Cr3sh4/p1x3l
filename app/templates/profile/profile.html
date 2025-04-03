@@ -1,0 +1,156 @@
+{% extends 'blueprints/base.html' %}
+
+{% block content %}
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll(".toggle-visibility").forEach(button => {
+            button.addEventListener("click", function (event) {
+                event.preventDefault();
+
+                let fileId = this.dataset.fileId;
+                let url = `/toggle_file_visibility/${fileId}/`;
+
+                fetch(url, {
+                    method: "POST",
+                    headers: {
+                        "X-CSRFToken": getCookie("csrftoken"),
+                        "Content-Type": "application/json"
+                    },
+                    credentials: "same-origin"
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            let btn = document.querySelector(`.toggle-visibility[data-file-id="${fileId}"]`);
+                            let icon = btn.querySelector("svg");
+                            if (data.is_public) {
+                                btn.classList.replace("bg-green-500", "bg-yellow-500");
+                                btn.classList.replace("hover:bg-green-600", "hover:bg-yellow-600");
+                                btn.innerHTML = `<svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
+                                         </svg> Hide`;
+                            } else {
+                                btn.classList.replace("bg-yellow-500", "bg-green-500");
+                                btn.classList.replace("hover:bg-yellow-600", "hover:bg-green-600");
+                                btn.innerHTML = `<svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                         </svg> Show`;
+                            }
+                        } else {
+                            alert("Failed to toggle visibility for file ID " + fileId);
+                        }
+                    });
+            });
+        });
+    });
+
+    // Get CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== "") {
+            let cookies = document.cookie.split(";");
+            for (let i = 0; i < cookies.length; i++) {
+                let cookie = cookies[i].trim();
+                if (cookie.startsWith(name + "=")) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    function openModal(imageSrc) {
+        const modal = document.getElementById('imageModal');
+        const modalImg = document.getElementById('modalImage');
+        modalImg.src = imageSrc;
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+
+        modal.addEventListener('click', function (e) {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+    }
+
+    function closeModal() {
+        const modal = document.getElementById('imageModal');
+        modal.classList.remove('flex');
+        modal.classList.add('hidden');
+    }
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            closeModal();
+        }
+    });
+</script>
+
+<!-- Image Modal -->
+<div id="imageModal" class="hidden fixed inset-0 z-50 items-center justify-center bg-black bg-opacity-75">
+    <img id="modalImage" class="max-h-[90vh] max-w-[90vw] object-contain" src="" alt="Modal Image">
+</div>
+
+<div class="container mx-auto px-4 py-10">
+    <div class="max-w-2xl mx-auto bg-white p-6 rounded-lg shadow-md">
+        <h1 class="text-3xl font-bold text-center mb-4">My Profile</h1>
+        <p class="text-lg text-center text-gray-700">Public Files: {{ user_data.file_count }}</p>
+    </div>
+
+    <div class="max-w-2xl mx-auto mt-6">
+        <h2 class="text-2xl font-semibold mb-4">Public Files</h2>
+        {% if user_data.stored_files %}
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for file in user_data.stored_files %}
+            <div class="bg-white p-4 rounded-lg shadow-md">
+                {% if file.is_image %}
+                <div class="aspect-square overflow-hidden rounded mb-3 cursor-pointer"
+                    onclick="openModal('{{ file.public_link }}')">
+                    <img src="{{ file.public_link }}" alt="{{ file.file.name }}" class="w-full h-full object-cover">
+                </div>
+                {% endif %}
+                <p class="text-gray-500 text-sm mb-3">Uploaded on: {{ file.created_at|date:"Y.m.d H:i" }}</p>
+                <div class="flex flex-col gap-2">
+                    <button class="toggle-visibility w-full flex items-center justify-center px-3 py-2 text-sm
+        {% if file.is_public %} bg-yellow-500 hover:bg-yellow-600 {% else %} bg-green-500 hover:bg-green-600 {% endif %}
+        text-white rounded transition" data-file-id="{{ file.id }}">
+                        {% if file.is_public %}
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21">
+                            </path>
+                        </svg>
+                        Hide
+                        {% else %}
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z">
+                            </path>
+                        </svg>
+                        Show
+                        {% endif %}
+                    </button>
+                    <button
+                        class="delete-file w-full flex items-center justify-center px-3 py-2 text-sm bg-red-500 text-white rounded hover:bg-red-600 transition"
+                        data-file-id="{{ file.id }}">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+                            </path>
+                        </svg>
+                        Delete
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-gray-600">No public files available.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
